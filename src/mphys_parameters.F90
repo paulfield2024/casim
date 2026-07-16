@@ -169,7 +169,7 @@ module mphys_parameters
        3.0,             0.0,      6.0,      & ! moments used
        3.0,             0.0,      6.0,      & ! sedimentation moments
        pi/6.0*200.0,           3.0,      0.0,     & ! mass-diameter relation
-       6e6,         2.0,   0.0,    .5,      & ! fallspeed
+       0.75*6e6,         2.0,   0.0,    .5,      & ! fallspeed
        0.0,           0.0,     0.0,         & ! fallspeed Abel-Shipway
        200.0,                               & ! density
        -999,         -999,    -999,         & ! moment indices (set elsewhere)
@@ -237,7 +237,7 @@ module mphys_parameters
        2.0,             0.0,      4.0,      & ! moments used
        2.0,             0.0,      4.0,      & ! sedimentation moments
        0.026,     2.0,      0.0,     & ! mass-diameter relation
-       12.0,         0.5,   0.0,    .5,     & ! fallspeed
+       0.75*12.0,         0.5,   0.0,    .5,     & ! fallspeed
        0.0,           0.0,     0.0,         & ! fallspeed Abel-Shipway
        100.0,                               & ! density
        -999,         -999,    -999,         & ! moment indices (set elsewhere)
