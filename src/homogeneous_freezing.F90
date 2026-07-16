@@ -207,7 +207,7 @@ contains
 
     real(wp) :: Tk, cap, rhoi, Ei, Ew, bm, Ai, B0, Bis, aw, dnumberi, &
                 ka, min_homog_ni, dniraw, d0_homog
-    logical :: l_use_critical_w = .True.  !ni controlled by w and environmental conditions
+    logical :: l_use_critical_w = .False.  !ni controlled by w and environmental conditions
     logical :: l_use_ni_limit = .False.   !ni limited to max per timestep
     
     
