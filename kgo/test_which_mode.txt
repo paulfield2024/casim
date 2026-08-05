@@ -1,0 +1,13 @@
+PASS which_mode small-rm dm1: actual=   2.0097397E-08 expected=   2.0097397E-08
+PASS which_mode small-rm dm2: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS which_mode small-rm dn1: actual=   1.0000000E+08 expected=   1.0000000E+08
+PASS which_mode small-rm dn2: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS which_mode large-rm dm2: actual=   3.8110619E-07 expected=   3.8110619E-07
+PASS which_mode large-rm dm1: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS which_mode large-rm dn2: actual=   1.0000000E+08 expected=   1.0000000E+08
+PASS which_mode large-rm dn1: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS which_mode dm*dn<=0 dm1: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS which_mode dm*dn<=0 dm2: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS which_mode dm*dn<=0 dn1: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS which_mode dm*dn<=0 dn2: actual=   0.0000000E+00 expected=   0.0000000E+00
+SUMMARY: 12/12 checks passed

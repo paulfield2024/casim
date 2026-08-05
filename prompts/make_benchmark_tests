@@ -1,0 +1,61 @@
+# Task
+
+make set of benchmark tests for CASIM
+
+## Objectives
+
+Catalog the functions and subroutines below micro_main.F90.
+Write unit tests for the functions and subroutines below micron_main.F90.
+Put the tests and output into a seperate directory: the output will be KGO to use in future testing.
+For micromain write a wrapper (1d column model) that represents a vertical atmospheric column and runs casim to generate another KGO output.
+
+
+## Requirements
+
+- Use FORTRAN for the unit tests and wrapper script
+- Produce clear, readable code.
+- Add comments where appropriate.
+
+## Input
+
+source files are in
+/data/users/paul.field/github/casim/src
+
+Assume:
+
+- all fortran 2008 style. 
+- write loops explicitly
+- for wrapper assume dont use the eulexp sedimentation
+- use the casim_iopt_act=0 option
+
+## Behaviour
+
+1. make a list of the functions called
+2. make unit tests for all of the functions
+2. make a list of the subroutines called by micro_main and the subroutines they call
+3. make unit tests for all of the subroutines
+3.5 run all of the tests and generate output files.
+4. make a 1d column model wrapper to call shipway_microphysics and test the casim code.
+5. for a default case use the following
+  0-10 km vertical column with dz=100m
+  surface temperature of 15 degrees C
+  lapse rate of 6.5C per km
+  a constant water vapour mixing ratio of 10 g/kg up to 1km and then decrease linearly by 1.0 g/kg per km above that.
+  Apply a parabolic vertical wind with a maximum of 5 m/s at 5km.
+6. apply a timestep of 10s for 500s
+7. generate netcdf output files (height, time) for all of the prognostics and diagnostics including all diagnostics in the casdiags structure.
+8. run the column model and generate output files
+
+## Error Handling
+
+If the file cannot be interpreted:
+
+- explain why
+- suggest a fix
+- do not invent missing data
+
+## Output
+
+new directory with fortran tests
+new directory with kgo
+new directory with column 1d model

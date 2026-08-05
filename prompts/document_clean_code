@@ -1,0 +1,47 @@
+# Task
+
+document cleaned up code
+
+## Objectives
+
+add comprehensive inline documentation and maintain kgos
+
+## Requirements
+
+- Produce clear, readable code.
+- Add comments where appropriate based on the casim paper to get the source citations
+
+## Input
+
+casim paper in
+/data/users/paul.field/github/casim/ref_docs/Quart J Royal Meteoro Soc - 2023 - Field - Implementation of a double moment cloud microphysics scheme in the UK met office.pdf
+
+umdp style instructions
+/data/users/paul.field/github/casim/ref_docs/umdp_003.pdf
+
+Assume:
+
+- all fortran 2008 style. 
+- write loops explicitly
+- follow umdp style guide
+
+## Behaviour
+
+1. read casim paper and style guide umdp_003.pdf
+2. make a new directory /data/users/paul.field/github/casim/src_clean_documented
+3. copy the src_clean to the new directory
+3. for each F90 file produce a documented version with reference to the casim paper to point to relevant references for each subroutine.
+4. At the end carry out the unit and column tests to make sure that nothing scientific has been changed during the style formatting.
+
+## Error Handling
+
+If the file cannot be interpreted:
+
+- explain why
+- suggest a fix
+- do not invent missing data
+
+## Output
+
+new directory with clean and documented fortran files
+new directory with kgo test results

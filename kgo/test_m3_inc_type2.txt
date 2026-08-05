@@ -1,0 +1,3 @@
+PASS m3_inc_type2 (m1>0, p3=6 shortcut): actual=   5.4736842E-01 expected=   5.4736842E-01
+PASS m3_inc_type2 (m1<=0 fallback to type3): actual=   8.9994520E+01 expected=   9.0000000E+01
+SUMMARY: 2/2 checks passed

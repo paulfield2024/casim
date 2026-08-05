@@ -1,0 +1,44 @@
+# Task
+
+clean up code according to umdp3
+
+## Objectives
+
+clean up code and maintain kgos
+
+## Requirements
+
+- Follow UMDP on code styling
+- Produce clear, readable code.
+- Add comments where appropriate.
+
+## Input
+
+style instructions are in
+/data/users/paul.field/github/casim/ref_docs/umdp_003.pdf
+
+Assume:
+
+- all fortran 2008 style. 
+- write loops explicitly
+- follow umdp style guide
+
+## Behaviour
+
+1. read style guide umdp_003.pdf
+2. make a new directory /data/users/paul.field/github/casim/src_clean
+3. for each F90 file produce a clean version following the style guide.
+4. At the end carry out the unit and column tests to make sure that nothing scientific has been changed during the style formatting.
+
+## Error Handling
+
+If the file cannot be interpreted:
+
+- explain why
+- suggest a fix
+- do not invent missing data
+
+## Output
+
+new directory with clean fortran files
+new directory with kgo test results

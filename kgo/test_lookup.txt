@@ -1,0 +1,5 @@
+PASS Gfunc(0,0,3,6): actual=   1.9998782E+01 expected=   2.0000000E+01
+PASS moment(1e6,1000,0,3): actual=   6.0005492E-03 expected=   6.0000000E-03
+PASS get_n0(m=6,p=3,mu=0,lam=1): actual=   9.9990848E-01 expected=   1.0000000E+00
+PASS get_mu(->2.5): actual=   2.5002836E+00 expected=   2.5000000E+00
+SUMMARY: 4/4 checks passed

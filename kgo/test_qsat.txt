@@ -1,0 +1,7 @@
+PASS Qsaturation(273.15, 1013.25): actual=   3.7730582E-03 expected=   3.7730566E-03
+PASS Qsaturation(293.15, 1013.25): actual=   1.4696310E-02 expected=   1.4696304E-02
+PASS Qsaturation(30.0, 1013.25) sentinel: actual=   9.9900000E+02 expected=   9.9900000E+02
+PASS Qisaturation(273.15, 1013.25): actual=   3.7730585E-03 expected=   3.7730566E-03
+PASS Qisaturation(253.15, 1013.25) < Qsaturation: actual=   6.3175083E-04 expected=   6.3175045E-04
+PASS dqwsatdt(qsat(20C), 293.15): actual=   9.3123713E-04 expected=   9.3123676E-04
+SUMMARY: 6/6 checks passed

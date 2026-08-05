@@ -1,0 +1,131 @@
+# Task
+
+Make a set of benchmark tests for CASIM.
+
+This is an updated version of `prompts/make_benchmark_tests`, rewritten to
+describe what was actually catalogued and built, so that the same result can
+be reproduced (or extended) from a clean checkout without re-deriving the
+call graph or the test-feasibility decisions from scratch.
+
+## Objectives
+
+- Catalog the functions and subroutines reachable below `micro_main.F90`'s
+  `shipway_microphysics` entry point.
+- Write standalone Fortran unit tests for the pure functions in that catalog.
+- Write standalone Fortran unit tests for the subset of subroutines whose
+  signatures are simple enough to exercise in isolation (plain `real(wp)`/
+  array arguments, no derived types needing full model initialisation).
+- Put the tests and their captured output into separate directories: the
+  captured output is the Known-Good-Output (KGO) baseline for future
+  regression testing.
+- For `micro_main`, write a wrapper (1D column model) representing a
+  vertical atmospheric column that runs CASIM end-to-end and generates a
+  netCDF KGO output.
+
+## Requirements
+
+- Use Fortran for the unit tests and the wrapper.
+- Produce clear, readable code; write loops explicitly (Fortran 2008 style).
+- Add comments where appropriate.
+- Do not use the eulexp sedimentation option in the wrapper.
+- Use the `iopt_act=0` aerosol-activation option (`aerosol_option=0`) in the
+  wrapper, i.e. no aerosol tracers / fixed CCN/IN assumptions.
+
+## Input
+
+Source files are in `/data/users/paul.field/github/casim/src`.
+
+## Behaviour
+
+1. **Catalog** (`unit_tests/CATALOG.md`): list every pure function and every
+   subroutine reachable (directly or transitively) from
+   `shipway_microphysics`, excluding UM/parent-model glue code and the
+   `casdiags` diagnostic-gathering code (already covered by the column
+   model). For each entry record its signature, what it does, and its
+   direct callees, plus a "testing priority" note on which routines are
+   feasible to unit test in isolation vs which need full model
+   initialisation.
+
+2. **Pure-function unit tests** (`unit_tests/test_*.F90`): write one
+   standalone `program test_*` per source file (or closely related group),
+   linking against `build/libcasim.a` and a small shared `test_utils.F90`
+   helper module (`check_close`, `check_true`, `test_summary`). Reference
+   values must be computed independently (e.g. in Python, replicating the
+   exact Fortran formula) rather than guessed by hand. Functions covered:
+   - `special.F90`: `casim_erfc`, `erfinv` (see note in Testing priority
+     below re: known accuracy caveats already documented in-source).
+   - `qsat_casim_func.F90`: `Qsaturation`, `Qisaturation`, `dqwsatdt`.
+   - `gauss_4A_func.F90`: `gauss_casim_func`.
+   - `lognormal_funcs.F90`: `MNtoRm`.
+   - `lookup.F90`: `Gfunc`, `moment`, `get_n0`, `get_mu` (`get_mu` needs a
+     (mu -> Gfunc) lookup table; build it locally via the public
+     `set_mu_lookup` helper - the same call signature `initialize.F90`
+     uses - rather than depending on unset module-level state. `Hfunc`
+     exists in this module but is not in its public list, so it is not
+     directly testable from outside).
+   - `m3_incs.F90`: `m3_inc_type1`, `m3_inc_type3`, `m3_inc_type4`,
+     `m3_inc_type2` (tests both its `m1>0` main branch and its `m1<=0`
+     fallback to `m3_inc_type3`).
+   - `gammafunc` (existing pilot test, `test_gammafunc.F90`).
+
+3. **Subroutine unit tests**: write standalone tests only for subroutines
+   with plain scalar/array signatures that don't require a fully
+   initialised `type(hydro_params)`, `qfields`/`cffields`/`procs` arrays, or
+   other model-wide setup:
+   - `which_mode_to_use.F90`: `which_mode` (with the repo's default
+     `l_aeroproc_midway=.FALSE.`, `imethod` is a compile-time parameter
+     fixed to `isimple_method`, so only the simple rm-vs-threshold branch
+     is reachable at runtime - test both sides of the threshold plus the
+     `dm*dn<=0` no-op case).
+
+   The much larger set of physics-process subroutines (`raut`, `racw`,
+   `revp`, `inuc`, `iacc`, `idep`, `melting`, `sedr`, ...) require a
+   fully-populated `type(hydro_params)` per hydrometeor species (built via
+   `mphys_init()` -> `gamma_initialize()`), plus `qfields`/`cffields`/
+   `procs`/`aerosol_procs` arrays allocated via `initialise_micromain`.
+   Building these by hand for an isolated unit test would mean
+   replicating almost all of `mphys_init()`, so these routines are
+   deliberately **not** given standalone `test_*.F90` files. Instead their
+   coverage comes from the column-model integration run (step 5 below) -
+   confirmed by checking that their process-rate diagnostics (e.g.
+   `psacw`, `psacr`, `pgacw`, `praci_g/r/i` for `iacc`) are non-zero across
+   many level/time points in the column model's netCDF KGO output.
+
+4. **Run all unit tests and capture KGO**: `unit_tests/build.sh` compiles
+   every `unit_tests/test_*.F90` against `build/libcasim.a`
+   (auto-discovered by globbing, so new `test_*.F90` files are picked up
+   automatically) into `unit_tests/bin/`. `unit_tests/run_all.sh` runs every
+   built executable, saves its stdout as `kgo/<test_name>.txt`, and exits
+   non-zero if any test's internal PASS/FAIL checks failed.
+
+5. **1D column model wrapper** (`column_model/casim_column_model.F90`):
+   calls `initialize::mphys_init` once, then loops calling
+   `micro_main::shipway_microphysics` once per timestep for a single
+   column (`i=1,j=1`), with:
+   - a 0-10 km vertical column, `dz=100 m`,
+   - surface temperature 15 degC, lapse rate 6.5 degC/km,
+   - constant water vapour mixing ratio of 10 g/kg up to 1 km, then
+     decreasing linearly by 1.0 g/kg per km above that,
+   - a parabolic vertical wind profile, maximum 5 m/s at 5 km,
+   - timestep 10 s, run for 500 s,
+   - `aerosol_option=0` (`iopt_act=0`), no eulexp sedimentation.
+   `column_model/build.sh` builds it against `build/libcasim.a`; running
+   the resulting executable writes plain-text per-level/per-time output
+   under `column_model/output/`, and `column_model/make_netcdf.py` converts
+   that into a single netCDF file (`height`, `time` dimensions) covering
+   every prognostic and every diagnostic in the `casdiags` structure.
+
+## Error Handling
+
+If a file cannot be interpreted:
+- explain why,
+- suggest a fix,
+- do not invent missing data.
+
+## Output
+
+- `unit_tests/` - Fortran unit tests, `test_utils.F90` helper, `build.sh`,
+  `run_all.sh`, and `CATALOG.md`.
+- `kgo/` - captured KGO text output, one file per unit test.
+- `column_model/` - the 1D column model wrapper, its build script, and its
+  netCDF KGO output (`column_model/output/casim_column_kgo.nc`).

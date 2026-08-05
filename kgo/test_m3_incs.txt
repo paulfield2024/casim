@@ -1,0 +1,4 @@
+PASS m3_inc_type1: actual=   1.0000000E-14 expected=   1.0000000E-14
+PASS m3_inc_type4: actual=  -1.8000000E-10 expected=  -1.8000000E-10
+PASS m3_inc_type3: actual=   8.9994520E+01 expected=   9.0000000E+01
+SUMMARY: 3/3 checks passed

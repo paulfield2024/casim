@@ -1,0 +1,4 @@
+PASS MNtoRm(1e-9,1e8,1777,1.5): actual=   8.6226908E-08 expected=   8.6226951E-08
+PASS MNtoRm below mass threshold: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS MNtoRm below number threshold: actual=   0.0000000E+00 expected=   0.0000000E+00
+SUMMARY: 3/3 checks passed

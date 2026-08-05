@@ -1,0 +1,11 @@
+PASS casim_erfc(0.01): actual=   9.8871658E-01 expected=   9.8871660E-01
+PASS casim_erfc(0.5): actual=   4.7950013E-01 expected=   4.7950010E-01
+PASS casim_erfc(1.0): actual=   1.5729922E-01 expected=   1.5729920E-01
+PASS casim_erfc(2.0): actual=   4.6777349E-03 expected=   4.6777000E-03
+PASS casim_erfc(-1.0): actual=   1.8427008E+00 expected=   1.8427008E+00
+PASS casim_erfc(1e-12) [KNOWN BUG: should be ~1.0]: actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS erfinv(0.0): actual=   0.0000000E+00 expected=   0.0000000E+00
+PASS erfinv(0.5): actual=   4.7692963E-01 expected=   4.7692962E-01
+PASS erfinv(-0.5): actual=  -4.7692963E-01 expected=  -4.7692962E-01
+PASS erfinv(0.8427008): actual=   9.8779550E-01 expected=   9.8779547E-01
+SUMMARY: 10/10 checks passed

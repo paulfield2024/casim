@@ -1,0 +1,7 @@
+PASS Gammafunc(1.0): actual=   9.9997117E-01 expected=   1.0000000E+00
+PASS Gammafunc(2.0): actual=   1.0000211E+00 expected=   1.0000000E+00
+PASS Gammafunc(3.0): actual=   2.0000922E+00 expected=   2.0000000E+00
+PASS Gammafunc(4.0): actual=   6.0003762E+00 expected=   6.0000000E+00
+PASS Gammafunc(5.0): actual=   2.4001803E+01 expected=   2.4000000E+01
+PASS Gammafunc(0.5): actual=   1.7722799E+00 expected=   1.7724539E+00
+SUMMARY: 6/6 checks passed
