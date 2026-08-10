@@ -793,14 +793,13 @@ contains
            
            if ( casdiags % l_hail ) then
              
-             call diagnose_hail_fast( ixy_inner, nz, nq, qfields(:,:,ixy_inner), cffields(:,:,ixy_inner),               &
-                                  D_crit, D0_thresh, D_max_sfc, precip_rate_hail, hail_flag, ierr )
+             call diagnose_hail_fast( ixy_inner, nz, nq,                       &
+                                 qfields(:,:,ixy_inner),                       &
+                                 D_max_sfc, precip_rate_hail, hail_flag, ierr )
              
                                   
              casdiags % hail_d_max_sfc(i,j)=D_max_sfc
-             casdiags % hail_d_crit(i,j)=D_crit
              casdiags % hail_flag_sfc(i,j)=hail_flag
-             casdiags % hail_d0_thresh(i,j)=D0_thresh
              casdiags % hail_precip_rate(i,j)=precip_rate_hail
              
              
