@@ -78,7 +78,6 @@ contains
     qv=qfields(:, i_qv)
     qg=qfields(:, i_qg)
     t(:)=TdegK(:,ixy_inner)
-    p(:)=pressure(:,ixy_inner)
     rhoa(:)=rho(:,ixy_inner)
     dz_in(:)=dz(:,ixy_inner)
 
