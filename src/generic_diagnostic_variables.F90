@@ -361,8 +361,6 @@ TYPE diaglist
   REAL, ALLOCATABLE :: dbz_r(:,:,:)
 
   REAL, ALLOCATABLE :: hail_d_max_sfc(:,:)
-  REAL, ALLOCATABLE :: hail_d_crit(:,:)
-  REAL, ALLOCATABLE :: hail_d0_thresh(:,:)
   REAL, ALLOCATABLE :: hail_flag_sfc(:,:)
   REAL, ALLOCATABLE :: hail_precip_rate(:,:)
 
@@ -646,15 +644,11 @@ END IF ! casdiags % l_radar
 IF ( casdiags % l_hail ) THEN
 
    ALLOCATE ( casdiags % hail_d_max_sfc(i_start:i_end, j_start:j_end) )
-   ALLOCATE ( casdiags % hail_d_crit(i_start:i_end, j_start:j_end) )
    ALLOCATE ( casdiags % hail_flag_sfc(i_start:i_end, j_start:j_end) )
-   ALLOCATE ( casdiags % hail_d0_thresh(i_start:i_end, j_start:j_end) )
    ALLOCATE ( casdiags % hail_precip_rate(i_start:i_end, j_start:j_end) )
 
    casdiags % hail_d_max_sfc(:,:) = zero_real_wp
-   casdiags % hail_d_crit(:,:) = zero_real_wp
    casdiags % hail_flag_sfc(:,:) = zero_real_wp
-   casdiags % hail_d0_thresh(:,:) = zero_real_wp
    casdiags % hail_precip_rate(:,:) = zero_real_wp
 
 
@@ -2623,14 +2617,8 @@ IF (casdiags % l_hail) THEN
    IF ( ALLOCATED ( casdiags % hail_precip_rate ) ) THEN
       DEALLOCATE( casdiags % hail_precip_rate )
    END IF
-   IF ( ALLOCATED ( casdiags % hail_d0_thresh ) ) THEN
-      DEALLOCATE( casdiags % hail_d0_thresh )
-   END IF
    IF ( ALLOCATED ( casdiags % hail_flag_sfc ) ) THEN
       DEALLOCATE( casdiags % hail_flag_sfc )
-   END IF
-   IF ( ALLOCATED ( casdiags % hail_d_crit ) ) THEN
-      DEALLOCATE( casdiags % hail_d_crit )
    END IF
    IF ( ALLOCATED ( casdiags % hail_d_max_sfc ) ) THEN
       DEALLOCATE( casdiags % hail_d_max_sfc )
