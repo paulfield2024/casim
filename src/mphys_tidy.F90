@@ -1,4 +1,6 @@
 module mphys_tidy
+  ! Some of the content of this file has been produced with the assistance of
+  ! Claude Opus5 and Claude Sonnet 5
   use variable_precision, only: wp
   use process_routines, only: process_rate,  process_name
   use aerosol_routines, only: aerosol_active
@@ -1267,6 +1269,8 @@ contains
   ! mass than is available and then rescales all processes
   ! (NB this follows any rescaling due to the parent microphysical processes and
   ! we might lose consistency between number and mass here)
+  ! Some of the content of this file has been produced with the assistance of
+  ! Claude Opus5 and Claude Sonnet 5
   subroutine ensure_positive_aerosol(nz, dt, aerofields, aerosol_procs, iprocs)
 
     USE yomhook, ONLY: lhook, dr_hook
