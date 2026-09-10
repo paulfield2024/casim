@@ -1524,19 +1524,23 @@ contains
             if (l_pos2) call ensure_positive(nz, step_length,                  &
               qfields(:,:,ixy_inner), procs(:,:,ixy_inner), ice_params,        &
               (/i_raci, i_saci, i_gaci, i_saut, i_isub, i_imlt/),              &
-              (/i_ihal, i_idps, i_iics, i_gshd, i_inuc, i_homc, i_iacw, i_idep/))
+              (/i_ihal, i_idps, i_iics, i_gshd, i_inuc, i_homc, i_iacw, i_idep/), &
+              aeroprocs=aerosol_procs(:,:,ixy_inner),                          &
+              iprocs_dependent=(/i_draci, i_dsub, i_dimlt/))
 
             if (l_pos3) call ensure_positive(nz, step_length,                  &
               qfields(:,:,ixy_inner), procs(:,:,ixy_inner), rain_params,       &
               (/i_prevp, i_sacr, i_gacr, i_homr/),                             &
               (/i_praut, i_pracw, i_raci, i_gshd, i_smlt, i_gmlt/),            &
               aeroprocs=aerosol_procs(:,:,ixy_inner),                          &
-              iprocs_dependent=(/i_arevp/))
+              iprocs_dependent=(/i_arevp, i_dsacr, i_dgacr, i_dhomr/))
 
             if (l_pos4) call ensure_positive(nz, step_length,                  &
               qfields(:,:,ixy_inner), procs(:,:,ixy_inner), snow_params,       &
               (/i_gacs, i_smlt, i_sacr, i_ssub /),                             &
-              (/i_sdep, i_sacw, i_saut, i_saci, i_raci, i_gshd, i_ihal, i_iics/)) 
+              (/i_sdep, i_sacw, i_saut, i_saci, i_raci, i_gshd, i_ihal, i_iics/), &
+              aeroprocs=aerosol_procs(:,:,ixy_inner),                          &
+              iprocs_dependent=(/i_dsmlt, i_dsacr, i_dssub/))
          else
             if (pswitch%l_praut .and. pswitch%l_pracw) then
                 if (l_pos5) call ensure_positive(nz, step_length,              &

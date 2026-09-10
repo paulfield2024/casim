@@ -203,7 +203,7 @@ contains
     ! This agrees well with the version in Ghan et al
     alpha = 9.8*(LvT/(eps*cp*T)-1.0)/(T*Rd)*(1-ent_fraction)
 
-    smax_cloud= alpha*w*tau
+    smax_cloud= MIN(0.10, alpha*w*tau) !limit to 10%
 
     kwdqsdz = w*5.3e5*15*dqsdt*0.006 ! constant*w*time-threshold*dqsat/dT*dT/dz
 

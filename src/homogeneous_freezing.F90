@@ -157,7 +157,7 @@ contains
              ! end if
 
              if (l_process) then
-                dmac = dnumber*aeroact(k)%mact2_mean
+                dmac = dnumber*aeroact(k)%mact2_mean*aeroact(k)%nratio2
 
                 aerosol_procs(i_am8, i_dhomr%id)%column_data(k) = dmac
                 aerosol_procs(i_am4, i_dhomr%id)%column_data(k) = -dmac
@@ -295,7 +295,7 @@ contains
 !!!NB if we keep l_use_critical_w approach need to deal with dnumber=/=dnumberi for processing!!
 
              if (l_process) then
-                dmac=dnumber*aeroact(k)%mact1_mean
+                dmac=dnumber*aeroact(k)%mact1_mean*aeroact(k)%nratio1
                 
                 aerosol_procs(i_am8, i_dhomc%id)%column_data(k)=dmac
                 aerosol_procs(i_am4, i_dhomc%id)%column_data(k)=-dmac
