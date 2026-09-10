@@ -1283,7 +1283,8 @@ contains
     type(process_name), intent(in) :: iprocs(:)    ! list of processes to rescale
 
     integer :: iq, iproc, id, k
-    real(wp) :: ratio, delta_scalable
+    real(wp) :: ratio, drain
+    real(wp) :: ratio_field(ntotala)
 
     INTEGER(KIND=jpim), PARAMETER :: zhook_in  = 0
     INTEGER(KIND=jpim), PARAMETER :: zhook_out = 1
@@ -1295,25 +1296,36 @@ contains
     IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_in,zhook_handle)
 
     do k=1,nz
+      ratio_field(:)=1.0_wp
       do iq=1, ntotala
-        delta_scalable=0.0
+        drain=0.0
         do iproc=1, size(iprocs)
           if (iprocs(iproc)%on) then
             id=iprocs(iproc)%id
-            delta_scalable=delta_scalable + aerosol_procs(iq, id)%column_data(k)
+            drain=drain + min(aerosol_procs(iq, id)%column_data(k), 0.0_wp)
           end if
         end do
-        delta_scalable=delta_scalable*dt
-        if (delta_scalable + aerofields(k, iq) < spacing(aerofields(k, iq))    &
-             .and. abs(delta_scalable) > spacing(aerofields(k, iq))) then
-          ratio=(spacing(aerofields(k, iq))-aerofields(k, iq))/(delta_scalable)
-
-          do iproc=1 ,size(iprocs)
-            if (iprocs(iproc)%on) then
-              id=iprocs(iproc)%id
-              aerosol_procs(iq,id)%column_data(k)=aerosol_procs(iq,id)%column_data(k)*ratio
-            end if
+        drain=-drain*dt    ! total demand on this field, >= 0
+        if (drain > spacing(aerofields(k, iq)) .and.                          &
+            drain > aerofields(k, iq)) then
+          ratio_field(iq)=max(aerofields(k, iq), 0.0_wp)/drain
+          ratio_field(iq)=min(max(ratio_field(iq), 0.0_wp), 1.0_wp)
+        end if
+      end do
+      do iproc=1, size(iprocs)
+        if (iprocs(iproc)%on) then
+          id=iprocs(iproc)%id
+          ratio=1.0_wp
+          do iq=1, ntotala
+            if (aerosol_procs(iq, id)%column_data(k) < 0.0_wp)                &
+                 ratio=min(ratio, ratio_field(iq))
           end do
+          if (ratio < 1.0_wp) then
+            do iq=1, ntotala
+              aerosol_procs(iq, id)%column_data(k)=                           &
+                   aerosol_procs(iq, id)%column_data(k)*ratio
+            end do
+          end if
         end if
       end do
     end do
