@@ -179,7 +179,7 @@ contains
   !==================
   ! Mason melting
   !==================
-  function mason_melt(a,a0,dz,t,v,rhoi) result(da)
+  function mason_melt(a,a0,dz,t,v,rhoi,rhoa) result(da)
     real(wp), intent(in) :: a,a0,dz,t,rhoi,rhoa,v
     real(wp) :: da, C, Re, beta
     beta=0.0 ! ignore condensation/evap
