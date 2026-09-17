@@ -4,6 +4,9 @@
 !===============================================================================
 module hail_diagnostic_fast_mod
 
+! Some of the content of this change has been produced with the assistance
+! of Claude Met Office Github Copilot Enterprise
+
   USE precision, ONLY: wp
 
   USE umPrintMgr, ONLY: umPrint, umMessage
@@ -24,7 +27,7 @@ module hail_diagnostic_fast_mod
   real(wp), parameter :: visc   = 1.7e-5_wp      ! visc kg/m/s
 
   ! ---- terminal velocity power law: V = a_v * (D_cm)^b_v * sqrt(rho0_ref/rho_air) ----
-  real(wp), parameter :: a_v = 14.0_wp  ! for cm; MASON 1971 4.41(Dmm)0.5
+  real(wp), parameter :: a_v = 14.0_wp  ! for cm; MASON 1971
   real(wp), parameter :: b_v = 0.5_wp
 
   ! ---- minimum thresholds ----
@@ -63,7 +66,7 @@ contains
     integer  :: k_ml, nn, k
     real(wp) :: a, a0, v, da
 
-    integer, parameter :: nh = 7
+    integer, parameter :: nh = 7 !ensure that this matches the haildedge array length
     real(wp), parameter :: rhoi = 900.0
     real(wp) :: haild(nh)
     real(wp) :: haildf(nh)
@@ -115,8 +118,8 @@ contains
       a0=haild(nn)/2.0 ! convert to radius at melting level
       a=a0
       do k = k_ml,1,-1
-        v=a_v*(2.0*a*100.0)**b_v * sqrt(rho0) !diam in cm
-        da=mason_melt(a,a0,dz_in(k),t(k)-273.15,v,rhoi)
+        v=a_v*(2.0*a*100.0)**b_v * sqrt(rho0/rhoa(k)) !diam in cm
+        da=mason_melt(a,a0,dz_in(k),t(k)-T0,v,rhoi,rhoa(k))
         a=a-da
       end do
       if ( a .gt. 0.0 .and. hailconc(nn) .gt. Nthresh) then
@@ -177,11 +180,11 @@ contains
   ! Mason melting
   !==================
   function mason_melt(a,a0,dz,t,v,rhoi) result(da)
-    real(wp), intent(in) :: a,a0,dz,t,rhoi,v
+    real(wp), intent(in) :: a,a0,dz,t,rhoi,rhoa,v
     real(wp) :: da, C, Re, beta
     beta=0.0 ! ignore condensation/evap
     
-    Re=v*(2*a)/visc
+    Re=v*(2*a)/visc*rhoa
     C=1.6+0.3*Re**0.5
     da=(Kw0*t*dz/Lf/rhoi/v)/ &
       ((a0-a)*a/a0+(Kw0/(C*(Ka+Lv*Dv*beta)))*a**2/a0)
