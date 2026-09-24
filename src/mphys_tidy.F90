@@ -836,30 +836,35 @@ contains
     IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_in,zhook_handle)
 
     do k=1, ubound(qfields,1)
-      if ((qfields(k, i_ql)+qfields(k,i_qr) <=0.0 .and. aerofields(k,i_am4)>0.0) .or. aerofields(k,i_am4) < 0.0) then
 
+      if ((qfields(k, i_ql)+qfields(k,i_qr) <=0.0 .and. aerofields(k,i_am4)>0.0) .or. aerofields(k,i_am4) < 0.0) then
+        aerofields(k,i_am2)=aerofields(k,i_am2)+aerofields(k,i_am4)
         aerofields(k,i_am4)=0.0
       end if
       if (i_am9 > 0)then
         if ((qfields(k, i_ql)+qfields(k,i_qr) <=0.0 .and. aerofields(k,i_am9)>0.0) .or. aerofields(k,i_am9) < 0.0) then
+          aerofields(k,i_am6)=aerofields(k,i_am6)+aerofields(k,i_am9)
           aerofields(k,i_am9)=0.0
         end if
       end if
 
       if (i_am5 > 0) then
         if (((qfields(k,i_qr) <=0.0 .and. aerofields(k,i_am5)>0.0) .or. aerofields(k,i_am5) < 0.0)) then
+          aerofields(k,i_am2)=aerofields(k,i_am2)+aerofields(k,i_am5)
           aerofields(k,i_am5)=0.0
         end if
       end if
       if (i_am7 > 0) then
         if (((qfields(k,i_qi) + qfields(k,i_qs) + qfields(k,i_qg) <=0.0 .and. aerofields(k,i_am7)>0.0) &
              .or. aerofields(k,i_am7) < 0.0)) then
+          aerofields(k,i_am6)=aerofields(k,i_am6)+aerofields(k,i_am7)
           aerofields(k,i_am7)=0.0
         end if
       end if
       if (i_am8 > 0) then
         if (((qfields(k,i_qi) + qfields(k,i_qs) + qfields(k,i_qg) <=0.0 .and. aerofields(k,i_am8)>0.0) &
              .or. aerofields(k,i_am8) < 0.0)) then
+          aerofields(k,i_am2)=aerofields(k,i_am2)+aerofields(k,i_am8)
           aerofields(k,i_am8)=0.0
         end if
       end if
@@ -899,6 +904,7 @@ contains
        END IF
        IF (i_am2 > 0) then
          if (aerofields(k, i_am2) < aeromass_small) then
+           aerofields(k, i_am4)=aerofields(k, i_am4)+aerofields(k, i_am2)
            aerofields(k, i_am2)=0.0
            aerofields(k, i_an2)=0.0
          end if
@@ -930,6 +936,7 @@ contains
        END IF
        IF (i_am2 > 0) then
          if (aerofields(k, i_an2) < aeronumber_small) then
+           aerofields(k, i_am4)=aerofields(k, i_am4)+aerofields(k, i_am2)
            aerofields(k, i_am2)=0.0
            aerofields(k, i_an2)=0.0
          end if
@@ -1283,8 +1290,10 @@ contains
     type(process_name), intent(in) :: iprocs(:)    ! list of processes to rescale
 
     integer :: iq, iproc, id, k
-    real(wp) :: ratio, drain
+    real(wp) :: ratio, delta_scalable
+    real(wp) :: drain
     real(wp) :: ratio_field(ntotala)
+    
 
     INTEGER(KIND=jpim), PARAMETER :: zhook_in  = 0
     INTEGER(KIND=jpim), PARAMETER :: zhook_out = 1
@@ -1296,39 +1305,85 @@ contains
     IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_in,zhook_handle)
 
     do k=1,nz
-      ratio_field(:)=1.0_wp
       do iq=1, ntotala
-        drain=0.0
+        delta_scalable=0.0
         do iproc=1, size(iprocs)
           if (iprocs(iproc)%on) then
             id=iprocs(iproc)%id
-            drain=drain + min(aerosol_procs(iq, id)%column_data(k), 0.0_wp)
+            delta_scalable=delta_scalable + aerosol_procs(iq, id)%column_data(k)
           end if
         end do
-        drain=-drain*dt    ! total demand on this field, >= 0
-        if (drain > spacing(aerofields(k, iq)) .and.                          &
-            drain > aerofields(k, iq)) then
-          ratio_field(iq)=max(aerofields(k, iq), 0.0_wp)/drain
-          ratio_field(iq)=min(max(ratio_field(iq), 0.0_wp), 1.0_wp)
-        end if
-      end do
-      do iproc=1, size(iprocs)
-        if (iprocs(iproc)%on) then
-          id=iprocs(iproc)%id
-          ratio=1.0_wp
-          do iq=1, ntotala
-            if (aerosol_procs(iq, id)%column_data(k) < 0.0_wp)                &
-                 ratio=min(ratio, ratio_field(iq))
+        delta_scalable=delta_scalable*dt
+        if (delta_scalable + aerofields(k, iq) < spacing(aerofields(k, iq))    &
+             .and. abs(delta_scalable) > spacing(aerofields(k, iq))) then
+          ratio=(spacing(aerofields(k, iq))-aerofields(k, iq))/(delta_scalable)
+
+          do iproc=1 ,size(iprocs)
+            if (iprocs(iproc)%on) then
+              id=iprocs(iproc)%id
+              aerosol_procs(iq,id)%column_data(k)=aerosol_procs(iq,id)%column_data(k)*ratio
+            end if
           end do
-          if (ratio < 1.0_wp) then
-            do iq=1, ntotala
-              aerosol_procs(iq, id)%column_data(k)=                           &
-                   aerosol_procs(iq, id)%column_data(k)*ratio
-            end do
-          end if
         end if
       end do
     end do
+
+
+!    do k=1,nz
+
+!      !---------------------------------------------------------------------
+!      ! Pass 1: for each aerosol field, find the factor by which the total
+!      !         demand on it must be reduced to leave it non-negative.
+!      !         Only the sinks are counted; sources arising within the same
+!      !         set of processes are ignored because they may themselves be
+!      !         rescaled in pass 2.
+!      !---------------------------------------------------------------------
+!      ratio_field(:)=1.0_wp
+!      do iq=1, ntotala
+!        drain=0.0
+!        do iproc=1, size(iprocs)
+!          if (iprocs(iproc)%on) then
+!            id=iprocs(iproc)%id
+!            drain=drain + min(aerosol_procs(iq, id)%column_data(k), 0.0_wp)
+!          end if
+!        end do
+!        drain=-drain*dt    ! total demand on this field, >= 0
+!        if (drain > spacing(aerofields(k, iq)) .and.                          &
+!            drain > aerofields(k, iq)) then
+!          ratio_field(iq)=max(aerofields(k, iq), 0.0_wp)/drain
+!          ratio_field(iq)=min(max(ratio_field(iq), 0.0_wp), 1.0_wp)
+!        end if
+!      end do
+
+!      !---------------------------------------------------------------------
+!      ! Pass 2: rescale each PROCESS by the most restrictive ratio among the
+!      !         fields it draws from, and apply that ratio to every field the
+!      !         process touches, so that paired transfers (e.g. i_am4 -> i_am8)
+!      !         remain balanced.  This mirrors ensure_positive, which rescales
+!      !         all the mass fields of a process together.
+!      !---------------------------------------------------------------------
+!      do iproc=1, size(iprocs)
+!        if (iprocs(iproc)%on) then
+!          id=iprocs(iproc)%id
+!          ratio=1.0_wp
+!          do iq=1, ntotala
+!            if (aerosol_procs(iq, id)%column_data(k) < 0.0_wp)                &
+!                 ratio=min(ratio, ratio_field(iq))
+!          end do
+!          if (ratio < 1.0_wp) then
+!            do iq=1, ntotala
+!              aerosol_procs(iq, id)%column_data(k)=                           &
+!                   aerosol_procs(iq, id)%column_data(k)*ratio
+!            end do
+!          end if
+!        end if
+!      end do
+
+!    end do
+
+
+
+
     IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_out,zhook_handle)
 
   end subroutine ensure_positive_aerosol

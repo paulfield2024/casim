@@ -1519,7 +1519,8 @@ contains
               qfields(:,:,ixy_inner), procs(:,:,ixy_inner), cloud_params,      &
               (/i_praut, i_pracw, i_iacw, i_sacw, i_gacw, i_homc, i_inuc/),    &
               aeroprocs=aerosol_procs(:,:,ixy_inner),                          &
-              iprocs_dependent=(/i_aaut, i_aacw/))
+              iprocs_dependent=(/i_aaut, i_aacw, i_diacw, i_dsacw, i_dgacw,    &
+                                 i_dhomc, i_dnuc/))
 
             if (l_pos2) call ensure_positive(nz, step_length,                  &
               qfields(:,:,ixy_inner), procs(:,:,ixy_inner), ice_params,        &
@@ -1928,10 +1929,11 @@ contains
 
                   if (l_process) then
                      if (l_warm) then
-                        call ensure_positive_aerosol(nz, step_length,          &
-                             aerofields(:,:,ixy_inner),                        &
-                             aerosol_procs(:,:,ixy_inner),                     &
-                             (/i_asedr, i_asedl/) )
+! No need to call ensure positive aerosol. Limiter added to sedimentation
+!                        call ensure_positive_aerosol(nz, step_length,          &
+!                             aerofields(:,:,ixy_inner),                        &
+!                             aerosol_procs(:,:,ixy_inner),                     &
+!                             (/i_asedr, i_asedl/) )
                         call sum_aprocs(sed_length, nz,                        &
                              aerosol_procs(:,:,ixy_inner),                     &
                              aerosol_tend(:,:,ixy_inner), (/i_asedr, i_asedl/))
@@ -1939,10 +1941,11 @@ contains
                              aerofields(:,:,ixy_inner),                        &
                              aerosol_tend(:,:,ixy_inner), l_aerosol=.true.)
                     else ! not l_warm - includes ice procs
-                        call ensure_positive_aerosol(nz, step_length,          &
-                             aerofields(:,:,ixy_inner),                        &
-                             aerosol_procs(:,:,ixy_inner),                     &
-                             (/i_asedr, i_asedl,i_dsedi, i_dseds, i_dsedg/) )
+! No need to call ensure positive aerosol. Limiter added to sedimentation
+!                        call ensure_positive_aerosol(nz, step_length,          &
+!                             aerofields(:,:,ixy_inner),                        &
+!                             aerosol_procs(:,:,ixy_inner),                     &
+!                             (/i_asedr, i_asedl,i_dsedi, i_dseds, i_dsedg/) )
                         call sum_aprocs(sed_length, nz,                        &
                              aerosol_procs(:,:,ixy_inner),                     &
                              aerosol_tend(:,:,ixy_inner),                      &
