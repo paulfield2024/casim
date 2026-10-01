@@ -105,6 +105,28 @@ module micro_main
 
 !$OMP THREADPRIVATE(procs, aerosol_procs)
 
+  ! Precip-loss (flux out of the bottom/surface, level1 only) diagnostics for
+  ! activated soluble (actsol) and activated insoluble (actinsol) aerosol
+  ! mass, per hydrometeor. Populated in microphysics_common and read back in
+  ! gather_process_diagnostics, so module scope (threadprivate) is required.
+  ! These arrays are nz-sized to match the existing 3D diagnostic arrays,
+  ! but only level1 (k=1) is ever populated; all other levels remain zero.
+  real(wp), allocatable :: actsol_loss_l1d(:,:)   ! cloud
+  real(wp), allocatable :: actsol_loss_r1d(:,:)   ! rain
+  real(wp), allocatable :: actsol_loss_i1d(:,:)   ! ice
+  real(wp), allocatable :: actsol_loss_s1d(:,:)   ! snow
+  real(wp), allocatable :: actsol_loss_g1d(:,:)   ! graupel
+  real(wp), allocatable :: actinsol_loss_l1d(:,:) ! cloud
+  real(wp), allocatable :: actinsol_loss_r1d(:,:) ! rain
+  real(wp), allocatable :: actinsol_loss_i1d(:,:) ! ice
+  real(wp), allocatable :: actinsol_loss_s1d(:,:) ! snow
+  real(wp), allocatable :: actinsol_loss_g1d(:,:) ! graupel
+
+!$OMP THREADPRIVATE(actsol_loss_l1d, actsol_loss_r1d, actsol_loss_i1d,           &
+!$OMP               actsol_loss_s1d, actsol_loss_g1d, actinsol_loss_l1d,         &
+!$OMP               actinsol_loss_r1d, actinsol_loss_i1d, actinsol_loss_s1d,     &
+!$OMP               actinsol_loss_g1d)
+
   type(aerosol_active), allocatable :: aeroact(:)
   type(aerosol_phys), allocatable   :: aerophys(:)
   type(aerosol_chem), allocatable   :: aerochem(:)
@@ -231,6 +253,27 @@ contains
     allocate(tend_temp(nz,nq))
     allocate(cffields(nz,5, nxy_inner)) !5 'cloud' fractions
     cffields=ZERO_REAL_WP
+
+    allocate(actsol_loss_l1d(nz, nxy_inner))
+    allocate(actsol_loss_r1d(nz, nxy_inner))
+    allocate(actsol_loss_i1d(nz, nxy_inner))
+    allocate(actsol_loss_s1d(nz, nxy_inner))
+    allocate(actsol_loss_g1d(nz, nxy_inner))
+    allocate(actinsol_loss_l1d(nz, nxy_inner))
+    allocate(actinsol_loss_r1d(nz, nxy_inner))
+    allocate(actinsol_loss_i1d(nz, nxy_inner))
+    allocate(actinsol_loss_s1d(nz, nxy_inner))
+    allocate(actinsol_loss_g1d(nz, nxy_inner))
+    actsol_loss_l1d=ZERO_REAL_WP
+    actsol_loss_r1d=ZERO_REAL_WP
+    actsol_loss_i1d=ZERO_REAL_WP
+    actsol_loss_s1d=ZERO_REAL_WP
+    actsol_loss_g1d=ZERO_REAL_WP
+    actinsol_loss_l1d=ZERO_REAL_WP
+    actinsol_loss_r1d=ZERO_REAL_WP
+    actinsol_loss_i1d=ZERO_REAL_WP
+    actinsol_loss_s1d=ZERO_REAL_WP
+    actinsol_loss_g1d=ZERO_REAL_WP
 
     ! Allocate aerosol storage
     if (aerosol_option > 0) then
@@ -364,6 +407,17 @@ contains
     deallocate(tend_temp)
     deallocate(precondition)
     deallocate(cffields)
+
+    deallocate(actsol_loss_l1d)
+    deallocate(actsol_loss_r1d)
+    deallocate(actsol_loss_i1d)
+    deallocate(actsol_loss_s1d)
+    deallocate(actsol_loss_g1d)
+    deallocate(actinsol_loss_l1d)
+    deallocate(actinsol_loss_r1d)
+    deallocate(actinsol_loss_i1d)
+    deallocate(actinsol_loss_s1d)
+    deallocate(actinsol_loss_g1d)
 
     ! aerosol fields
     if (l_process) call deallocate_procs(nxy_inner, aerosol_procs)
@@ -944,6 +998,13 @@ contains
     real(wp) :: precip_i_w1d(nz,nxy_inner) ! Ice precip 1D
     real(wp) :: precip_g_w1d(nz,nxy_inner) ! Graupel precip 1D
     real(wp) :: precip_s_w1d(nz,nxy_inner) ! Snow precip
+
+    ! Local working arrays for the flux of activated (soluble, actsol) and
+    ! activated insoluble (dust, actinsol) aerosol mass leaving each level,
+    ! populated identically to precip1d (i.e. independent of, and not used
+    ! to derive, the aerosol_procs sedimentation divergence tendencies).
+    real(wp) :: actsol_precip1d(nz,nxy_inner)
+    real(wp) :: actinsol_precip1d(nz,nxy_inner)
 
     integer :: nsubsteps, nsubseds, n_inner
 
@@ -1719,6 +1780,20 @@ contains
             precip_i_w1d(k, ixy_inner) = 0.0
             precip_g_w1d(k, ixy_inner) = 0.0
             precip_s_w1d(k, ixy_inner) = 0.0
+
+            ! Precip-loss diagnostics for activated aerosol mass (actsol,
+            ! actinsol): only level1 (k=1) is ever populated below, but the
+            ! full column is zeroed here so the unused levels stay at zero.
+            actsol_loss_l1d(k, ixy_inner) = 0.0
+            actsol_loss_r1d(k, ixy_inner) = 0.0
+            actsol_loss_i1d(k, ixy_inner) = 0.0
+            actsol_loss_s1d(k, ixy_inner) = 0.0
+            actsol_loss_g1d(k, ixy_inner) = 0.0
+            actinsol_loss_l1d(k, ixy_inner) = 0.0
+            actinsol_loss_r1d(k, ixy_inner) = 0.0
+            actinsol_loss_i1d(k, ixy_inner) = 0.0
+            actinsol_loss_s1d(k, ixy_inner) = 0.0
+            actinsol_loss_g1d(k, ixy_inner) = 0.0
          end do
 
          if ( casdiags % l_process_rates ) then
@@ -1778,13 +1853,17 @@ contains
                         call sedr(ixy_inner, qfields(:,:,ixy_inner), aeroact,  &
                              dustliq, cloud_params, procs(:,:,ixy_inner),      &
                              aerosol_procs(:,:,ixy_inner),                     &
-                             precip1d(:,ixy_inner), l_process)
+                             precip1d(:,ixy_inner),                            &
+                             actsol_precip1d(:,ixy_inner),                     &
+                             actinsol_precip1d(:,ixy_inner), l_process)
                      else
                         call sedr_1M_2M(ixy_inner, sed_length,                 &
                               qfields(:,:,ixy_inner), aeroact, dustliq,        &
                               cloud_params, procs(:,:,ixy_inner),              &
                               aerosol_procs(:,:,ixy_inner),                    &
-                              precip1d(:,ixy_inner), l_process)
+                              precip1d(:,ixy_inner),                           &
+                              actsol_precip1d(:,ixy_inner),                    &
+                              actinsol_precip1d(:,ixy_inner), l_process)
                      endif
 
                      precip_l_w(ixy_inner) = precip_l_w(ixy_inner) +           &
@@ -1794,6 +1873,13 @@ contains
                         precip_l_w1d(k,ixy_inner) = precip_l_w1d(k,ixy_inner)  &
                                                         + precip1d(k,ixy_inner)
                      end do
+
+                     actsol_loss_l1d(level1,ixy_inner) =                       &
+                          actsol_loss_l1d(level1,ixy_inner) +                  &
+                          actsol_precip1d(level1,ixy_inner)
+                     actinsol_loss_l1d(level1,ixy_inner) =                     &
+                          actinsol_loss_l1d(level1,ixy_inner) +                &
+                          actinsol_precip1d(level1,ixy_inner)
 
                      call sum_procs(ixy_inner, sed_length, nz,                 &
                           procs(:,:,ixy_inner), tend(:,:,ixy_inner),           &
@@ -1806,13 +1892,17 @@ contains
                         call sedr(ixy_inner, qfields(:,:,ixy_inner), aeroact,  &
                              dustliq, rain_params, procs(:,:,ixy_inner),       &
                              aerosol_procs(:,:,ixy_inner),                     &
-                             precip1d(:,ixy_inner), l_process)
+                             precip1d(:,ixy_inner),                            &
+                             actsol_precip1d(:,ixy_inner),                     &
+                             actinsol_precip1d(:,ixy_inner), l_process)
                      else
                         call sedr_1M_2M(ixy_inner, sed_length,                 &
                              qfields(:,:,ixy_inner), aeroact, dustliq,         &
                              rain_params, procs(:,:,ixy_inner),                &
                              aerosol_procs(:,:,ixy_inner),                     &
-                             precip1d(:,ixy_inner), l_process)
+                             precip1d(:,ixy_inner),                            &
+                             actsol_precip1d(:,ixy_inner),                     &
+                             actinsol_precip1d(:,ixy_inner), l_process)
                      endif
 
                      precip_r_w(ixy_inner) = precip_r_w(ixy_inner) +           &
@@ -1822,6 +1912,13 @@ contains
                         precip_r_w1d(k,ixy_inner) = precip_r_w1d(k,ixy_inner) +&
                                                           precip1d(k,ixy_inner)
                      end do
+
+                     actsol_loss_r1d(level1,ixy_inner) =                      &
+                          actsol_loss_r1d(level1,ixy_inner) +                 &
+                          actsol_precip1d(level1,ixy_inner)
+                     actinsol_loss_r1d(level1,ixy_inner) =                    &
+                          actinsol_loss_r1d(level1,ixy_inner) +               &
+                          actinsol_precip1d(level1,ixy_inner)
 
                      call sum_procs(ixy_inner, sed_length, nz,                 &
                           procs(:,:,ixy_inner), tend(:,:,ixy_inner),           &
@@ -1837,13 +1934,17 @@ contains
                                 aeroice, dustact, ice_params,                  &
                                 procs(:,:,ixy_inner),                          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         else
                            call sedr_1M_2M(ixy_inner, sed_length,              &
                                 qfields(:,:,ixy_inner), aeroice, dustact,      &
                                 ice_params, procs(:,:,ixy_inner),              &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         endif
                         precip_i_w(ixy_inner) = precip_i_w(ixy_inner) +        &
                                                      precip1d(level1,ixy_inner)
@@ -1852,6 +1953,13 @@ contains
                            precip_i_w1d(k,ixy_inner) =                         &
                               precip_i_w1d(k,ixy_inner) + precip1d(k,ixy_inner)
                         end do
+
+                        actsol_loss_i1d(level1,ixy_inner) =                    &
+                             actsol_loss_i1d(level1,ixy_inner) +               &
+                             actsol_precip1d(level1,ixy_inner)
+                        actinsol_loss_i1d(level1,ixy_inner) =                  &
+                             actinsol_loss_i1d(level1,ixy_inner) +             &
+                             actinsol_precip1d(level1,ixy_inner)
 
                         call sum_procs(ixy_inner, sed_length, nz,              &
                              procs(:,:,ixy_inner), tend(:,:,ixy_inner),        &
@@ -1865,13 +1973,17 @@ contains
                                 aeroice, dustact, snow_params,                 &
                                 procs(:,:,ixy_inner),                          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         else
                            call sedr_1M_2M(ixy_inner, sed_length,              &
                                 qfields(:,:,ixy_inner), aeroice, dustact,      &
                                 snow_params, procs(:,:,ixy_inner),             &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         endif
                         precip_s_w(ixy_inner) = precip_s_w(ixy_inner) +        &
                                                      precip1d(level1,ixy_inner)
@@ -1880,6 +1992,13 @@ contains
                            precip_s_w1d(k,ixy_inner) =                         &
                               precip_s_w1d(k,ixy_inner) + precip1d(k,ixy_inner)
                         end do
+
+                        actsol_loss_s1d(level1,ixy_inner) =                    &
+                             actsol_loss_s1d(level1,ixy_inner) +               &
+                             actsol_precip1d(level1,ixy_inner)
+                        actinsol_loss_s1d(level1,ixy_inner) =                  &
+                             actinsol_loss_s1d(level1,ixy_inner) +             &
+                             actinsol_precip1d(level1,ixy_inner)
 
                         call sum_procs(ixy_inner, sed_length, nz,              &
                              procs(:,:,ixy_inner), tend(:,:,ixy_inner),        &
@@ -1893,13 +2012,17 @@ contains
                                 aeroice, dustact, graupel_params,              &
                                 procs(:,:,ixy_inner),                          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         else
                            call sedr_1M_2M(ixy_inner, sed_length,              &
                                 qfields(:,:,ixy_inner), aeroice, dustact,      &
                                 graupel_params, procs(:,:,ixy_inner),          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         endif
                         precip_g_w(ixy_inner) = precip_g_w(ixy_inner) +        &
                                                      precip1d(level1,ixy_inner)
@@ -1908,6 +2031,13 @@ contains
                            precip_g_w1d(k,ixy_inner) =                         &
                               precip_g_w1d(k,ixy_inner) + precip1d(k,ixy_inner)
                         end do
+
+                        actsol_loss_g1d(level1,ixy_inner) =                    &
+                             actsol_loss_g1d(level1,ixy_inner) +               &
+                             actsol_precip1d(level1,ixy_inner)
+                        actinsol_loss_g1d(level1,ixy_inner) =                  &
+                             actinsol_loss_g1d(level1,ixy_inner) +             &
+                             actinsol_precip1d(level1,ixy_inner)
 
                         call sum_procs(ixy_inner, sed_length, nz,              &
                              procs(:,:,ixy_inner), tend(:,:,ixy_inner),        &
@@ -1986,13 +2116,17 @@ contains
                         call sedr(ixy_inner, qfields(:,:,ixy_inner), aeroact,  &
                              dustliq, cloud_params, procs(:,:,ixy_inner),      &
                              aerosol_procs(:,:,ixy_inner),                     &
-                             precip1d(:,ixy_inner), l_process)
+                             precip1d(:,ixy_inner),                            &
+                             actsol_precip1d(:,ixy_inner),                     &
+                             actinsol_precip1d(:,ixy_inner), l_process)
                      else
                         call sedr_1M_2M(ixy_inner, sed_length_cloud,           &
                              qfields(:,:,ixy_inner), aeroact, dustliq,         &
                              cloud_params, procs(:,:,ixy_inner),               &
                              aerosol_procs(:,:,ixy_inner),                     &
-                             precip1d(:,ixy_inner), l_process)
+                             precip1d(:,ixy_inner),                            &
+                             actsol_precip1d(:,ixy_inner),                     &
+                             actinsol_precip1d(:,ixy_inner), l_process)
                      endif
 
                      precip_l_w(ixy_inner) = precip_l_w(ixy_inner) +           &
@@ -2002,6 +2136,13 @@ contains
                         precip_l_w1d(k,ixy_inner) = precip_l_w1d(k,ixy_inner) +&
                                                           precip1d(k,ixy_inner)
                      end do
+
+                     actsol_loss_l1d(level1,ixy_inner) =                       &
+                          actsol_loss_l1d(level1,ixy_inner) +                  &
+                          actsol_precip1d(level1,ixy_inner)
+                     actinsol_loss_l1d(level1,ixy_inner) =                     &
+                          actinsol_loss_l1d(level1,ixy_inner) +                &
+                          actinsol_precip1d(level1,ixy_inner)
 
                      if ( casdiags % l_process_rates ) then
                         call gather_process_diagnostics(ixy_inner, ix, jy, k_start, k_end,ncall=1)
@@ -2053,13 +2194,17 @@ contains
                         call sedr(ixy_inner, qfields(:,:,ixy_inner), aeroact,  &
                              dustliq, rain_params, procs(:,:,ixy_inner),       &
                              aerosol_procs(:,:,ixy_inner),                     &
-                             precip1d(:,ixy_inner), l_process)
+                             precip1d(:,ixy_inner),                            &
+                             actsol_precip1d(:,ixy_inner),                     &
+                             actinsol_precip1d(:,ixy_inner), l_process)
                      else
                         call sedr_1M_2M(ixy_inner, sed_length_rain,            &
                              qfields(:,:,ixy_inner), aeroact, dustliq,         &
                              rain_params, procs(:,:,ixy_inner),                &
                              aerosol_procs(:,:,ixy_inner),                     &
-                             precip1d(:,ixy_inner), l_process)
+                             precip1d(:,ixy_inner),                            &
+                             actsol_precip1d(:,ixy_inner),                     &
+                             actinsol_precip1d(:,ixy_inner), l_process)
                      endif
 
                      precip_r_w(ixy_inner) = precip_r_w(ixy_inner) +           &
@@ -2069,6 +2214,13 @@ contains
                         precip_r_w1d(k,ixy_inner) = precip_r_w1d(k,ixy_inner) +&
                                                           precip1d(k,ixy_inner)
                      end do
+
+                     actsol_loss_r1d(level1,ixy_inner) =                      &
+                          actsol_loss_r1d(level1,ixy_inner) +                 &
+                          actsol_precip1d(level1,ixy_inner)
+                     actinsol_loss_r1d(level1,ixy_inner) =                    &
+                          actinsol_loss_r1d(level1,ixy_inner) +               &
+                          actinsol_precip1d(level1,ixy_inner)
 
                      if ( casdiags % l_process_rates ) then
                         call gather_process_diagnostics(ixy_inner, ix, jy, k_start, k_end,ncall=1)
@@ -2123,13 +2275,17 @@ contains
                                 aeroice, dustact, ice_params,                  &
                                 procs(:,:,ixy_inner),                          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         else
                            call sedr_1M_2M(ixy_inner, sed_length_ice,          &
                                 qfields(:,:,ixy_inner), aeroice, dustact,      &
                                 ice_params, procs(:,:,ixy_inner),              &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         end if
 
                         precip_i_w(ixy_inner) = precip_i_w(ixy_inner) +        &
@@ -2139,6 +2295,13 @@ contains
                            precip_i_w1d(k,ixy_inner) =                         &
                               precip_i_w1d(k,ixy_inner) + precip1d(k,ixy_inner)
                         end do
+
+                        actsol_loss_i1d(level1,ixy_inner) =                    &
+                             actsol_loss_i1d(level1,ixy_inner) +               &
+                             actsol_precip1d(level1,ixy_inner)
+                        actinsol_loss_i1d(level1,ixy_inner) =                  &
+                             actinsol_loss_i1d(level1,ixy_inner) +             &
+                             actinsol_precip1d(level1,ixy_inner)
 
                         if ( casdiags % l_process_rates ) then
                            call gather_process_diagnostics(ixy_inner, ix, jy, k_start, k_end,ncall=1)
@@ -2191,13 +2354,17 @@ contains
                                 aeroice, dustact, snow_params,                 &
                                 procs(:,:,ixy_inner),                          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         else
                            call sedr_1M_2M(ixy_inner, sed_length_snow,         &
                                 qfields(:,:,ixy_inner), aeroice, dustact,      &
                                 snow_params, procs(:,:,ixy_inner),             &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         end if
 
                         precip_s_w(ixy_inner) = precip_s_w(ixy_inner) +        &
@@ -2207,6 +2374,13 @@ contains
                            precip_s_w1d(k,ixy_inner) =                         &
                               precip_s_w1d(k,ixy_inner) + precip1d(k,ixy_inner)
                         end do
+
+                        actsol_loss_s1d(level1,ixy_inner) =                    &
+                             actsol_loss_s1d(level1,ixy_inner) +               &
+                             actsol_precip1d(level1,ixy_inner)
+                        actinsol_loss_s1d(level1,ixy_inner) =                  &
+                             actinsol_loss_s1d(level1,ixy_inner) +             &
+                             actinsol_precip1d(level1,ixy_inner)
 
                         if ( casdiags % l_process_rates ) then
                            call gather_process_diagnostics(ixy_inner, ix, jy, k_start, k_end,ncall=1)
@@ -2258,13 +2432,17 @@ contains
                                 aeroice, dustact, graupel_params,              &
                                 procs(:,:,ixy_inner),                          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         else
                            call sedr_1M_2M(ixy_inner, sed_length_graupel,      &
                                 qfields(:,:,ixy_inner), aeroice, dustact,      &
                                 graupel_params, procs(:,:,ixy_inner),          &
                                 aerosol_procs(:,:,ixy_inner),                  &
-                                precip1d(:,ixy_inner), l_process)
+                                precip1d(:,ixy_inner),                         &
+                                actsol_precip1d(:,ixy_inner),                  &
+                                actinsol_precip1d(:,ixy_inner), l_process)
                         end if
 
                         precip_g_w(ixy_inner) = precip_g_w(ixy_inner) +        &
@@ -2274,6 +2452,13 @@ contains
                            precip_g_w1d(k,ixy_inner) =                         &
                               precip_g_w1d(k,ixy_inner) + precip1d(k,ixy_inner)
                         end do
+
+                        actsol_loss_g1d(level1,ixy_inner) =                    &
+                             actsol_loss_g1d(level1,ixy_inner) +               &
+                             actsol_precip1d(level1,ixy_inner)
+                        actinsol_loss_g1d(level1,ixy_inner) =                  &
+                             actinsol_loss_g1d(level1,ixy_inner) +             &
+                             actinsol_precip1d(level1,ixy_inner)
 
                         if ( casdiags % l_process_rates ) then
                            call gather_process_diagnostics(ixy_inner, ix, jy, k_start, k_end,ncall=1)
@@ -2383,6 +2568,23 @@ contains
           precip_so1d(k,ixy_inner) = precip_so1d(k,ixy_inner) * inv_allsubs
           precip_g1d(k,ixy_inner)  = precip_g1d(k,ixy_inner)  * inv_allsubs
        end do ! k
+
+       ! As above for precip: actsol_loss_*1d/actinsol_loss_*1d are
+       ! accumulated (summed, not averaged) over every sedimentation
+       ! substep (nsed) and every microphysics substep (nsubsteps), so they
+       ! must be normalised by the same inv_allsubs_* factors before being
+       ! used as diagnostics, otherwise they are too large by a factor of
+       ! (nsubseds * nsubsteps).
+       actsol_loss_l1d(:,ixy_inner)   = actsol_loss_l1d(:,ixy_inner)   * inv_allsubs_cloud
+       actinsol_loss_l1d(:,ixy_inner) = actinsol_loss_l1d(:,ixy_inner) * inv_allsubs_cloud
+       actsol_loss_r1d(:,ixy_inner)   = actsol_loss_r1d(:,ixy_inner)   * inv_allsubs_rain
+       actinsol_loss_r1d(:,ixy_inner) = actinsol_loss_r1d(:,ixy_inner) * inv_allsubs_rain
+       actsol_loss_i1d(:,ixy_inner)   = actsol_loss_i1d(:,ixy_inner)   * inv_allsubs_ice
+       actinsol_loss_i1d(:,ixy_inner) = actinsol_loss_i1d(:,ixy_inner) * inv_allsubs_ice
+       actsol_loss_s1d(:,ixy_inner)   = actsol_loss_s1d(:,ixy_inner)   * inv_allsubs_snow
+       actinsol_loss_s1d(:,ixy_inner) = actinsol_loss_s1d(:,ixy_inner) * inv_allsubs_snow
+       actsol_loss_g1d(:,ixy_inner)   = actsol_loss_g1d(:,ixy_inner)   * inv_allsubs_graupel
+       actinsol_loss_g1d(:,ixy_inner) = actinsol_loss_g1d(:,ixy_inner) * inv_allsubs_graupel
 
        ! Precip is a sum of everything, so just add rain and snow together which
        ! has all components added.
@@ -4070,17 +4272,13 @@ contains
 
     IF (casdiags % l_asedr_am) THEN
       IF (aswitch%l_asedr) THEN
-        IF (l_separate_rain) THEN
-          DO k = k_start, k_end
-            kc = k - k_start + 1
-            casdiags % asedr_am(i,j,k) = aerosol_procs(i_am5, i_asedr%id, ixy_inner)%column_data(kc)
-          END DO
-        ELSE
-          DO k = k_start, k_end
-            kc = k - k_start + 1
-            casdiags % asedr_am(i,j,k) = aerosol_procs(i_am4, i_asedr%id, ixy_inner)%column_data(kc)
-          END DO
-        ENDIF ! separate rain aerosol
+        ! Precip-loss diagnostic: flux of activated soluble (actsol) aerosol
+        ! mass leaving the bottom of the domain via rain sedimentation. Only
+        ! level1 (k=1) is populated; other levels are zero.
+        DO k = k_start, k_end
+          kc = k - k_start + 1
+          casdiags % asedr_am(i,j,k) = actsol_loss_r1d(kc, ixy_inner)
+        END DO
       ELSE
         casdiags % asedr_am(i,j,:) = ZERO_REAL_WP
       END IF
@@ -4111,9 +4309,12 @@ contains
 
     IF (casdiags % l_asedl_am4) THEN
       IF (aswitch%l_asedl) THEN
+        ! Precip-loss diagnostic: flux of activated soluble (actsol) aerosol
+        ! mass leaving the bottom of the domain via cloud sedimentation. Only
+        ! level1 (k=1) is populated; other levels are zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % asedl_am4(i,j,k) = aerosol_procs(i_am4, i_asedl%id, ixy_inner)%column_data(kc)
+          casdiags % asedl_am4(i,j,k) = actsol_loss_l1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % asedl_am4(i,j,:) = ZERO_REAL_WP
@@ -4144,9 +4345,12 @@ contains
 
     IF (casdiags % l_dsedi_am7) THEN
       IF (aswitch%l_dsedi) THEN
+        ! Precip-loss diagnostic: flux of activated insoluble (actinsol,
+        ! dust) aerosol mass leaving the bottom of the domain via ice
+        ! sedimentation. Only level1 (k=1) is populated; other levels zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % dsedi_am7(i,j,k) = aerosol_procs(i_am7, i_dsedi%id, ixy_inner)%column_data(kc)
+          casdiags % dsedi_am7(i,j,k) = actinsol_loss_i1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % dsedi_am7(i,j,:) = ZERO_REAL_WP
@@ -4155,9 +4359,12 @@ contains
 
     IF (casdiags % l_dsedi_am8) THEN
       IF (aswitch%l_dsedi) THEN
+        ! Precip-loss diagnostic: flux of activated soluble (actsol) aerosol
+        ! mass leaving the bottom of the domain via ice sedimentation. Only
+        ! level1 (k=1) is populated; other levels are zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % dsedi_am8(i,j,k) = aerosol_procs(i_am8, i_dsedi%id, ixy_inner)%column_data(kc)
+          casdiags % dsedi_am8(i,j,k) = actsol_loss_i1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % dsedi_am8(i,j,:) = ZERO_REAL_WP
@@ -4188,9 +4395,12 @@ contains
 
     IF (casdiags % l_dseds_am7) THEN
       IF (aswitch%l_dseds) THEN
+        ! Precip-loss diagnostic: flux of activated insoluble (actinsol,
+        ! dust) aerosol mass leaving the bottom of the domain via snow
+        ! sedimentation. Only level1 (k=1) is populated; other levels zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % dseds_am7(i,j,k) = aerosol_procs(i_am7, i_dseds%id, ixy_inner)%column_data(kc)
+          casdiags % dseds_am7(i,j,k) = actinsol_loss_s1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % dseds_am7(i,j,:) = ZERO_REAL_WP
@@ -4199,9 +4409,12 @@ contains
 
     IF (casdiags % l_dseds_am8) THEN
       IF (aswitch%l_dseds) THEN
+        ! Precip-loss diagnostic: flux of activated soluble (actsol) aerosol
+        ! mass leaving the bottom of the domain via snow sedimentation. Only
+        ! level1 (k=1) is populated; other levels are zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % dseds_am8(i,j,k) = aerosol_procs(i_am8, i_dseds%id, ixy_inner)%column_data(kc)
+          casdiags % dseds_am8(i,j,k) = actsol_loss_s1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % dseds_am8(i,j,:) = ZERO_REAL_WP
@@ -4232,9 +4445,12 @@ contains
 
     IF (casdiags % l_dsedg_am7) THEN
       IF (aswitch%l_dsedg) THEN
+        ! Precip-loss diagnostic: flux of activated insoluble (actinsol,
+        ! dust) aerosol mass leaving the bottom of the domain via graupel
+        ! sedimentation. Only level1 (k=1) is populated; other levels zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % dsedg_am7(i,j,k) = aerosol_procs(i_am7, i_dsedg%id, ixy_inner)%column_data(kc)
+          casdiags % dsedg_am7(i,j,k) = actinsol_loss_g1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % dsedg_am7(i,j,:) = ZERO_REAL_WP
@@ -4243,9 +4459,12 @@ contains
 
     IF (casdiags % l_dsedg_am8) THEN
       IF (aswitch%l_dsedg) THEN
+        ! Precip-loss diagnostic: flux of activated soluble (actsol) aerosol
+        ! mass leaving the bottom of the domain via graupel sedimentation.
+        ! Only level1 (k=1) is populated; other levels are zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % dsedg_am8(i,j,k) = aerosol_procs(i_am8, i_dsedg%id, ixy_inner)%column_data(kc)
+          casdiags % dsedg_am8(i,j,k) = actsol_loss_g1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % dsedg_am8(i,j,:) = ZERO_REAL_WP
@@ -4276,9 +4495,12 @@ contains
 
     IF (casdiags % l_asedl_am9) THEN
       IF (aswitch%l_asedl) THEN
+        ! Precip-loss diagnostic: flux of activated insoluble (actinsol,
+        ! dust) aerosol mass leaving the bottom of the domain via cloud
+        ! sedimentation. Only level1 (k=1) is populated; other levels zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % asedl_am9(i,j,k) = aerosol_procs(i_am9, i_asedl%id, ixy_inner)%column_data(kc)
+          casdiags % asedl_am9(i,j,k) = actinsol_loss_l1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % asedl_am9(i,j,:) = ZERO_REAL_WP
@@ -4287,9 +4509,12 @@ contains
 
     IF (casdiags % l_asedr_am9) THEN
       IF (aswitch%l_asedr) THEN
+        ! Precip-loss diagnostic: flux of activated insoluble (actinsol,
+        ! dust) aerosol mass leaving the bottom of the domain via rain
+        ! sedimentation. Only level1 (k=1) is populated; other levels zero.
         DO k = k_start, k_end
           kc = k - k_start + 1
-          casdiags % asedr_am9(i,j,k) = aerosol_procs(i_am9, i_asedr%id, ixy_inner)%column_data(kc)
+          casdiags % asedr_am9(i,j,k) = actinsol_loss_r1d(kc, ixy_inner)
         END DO
       ELSE
         casdiags % asedr_am9(i,j,:) = ZERO_REAL_WP
