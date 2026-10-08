@@ -1088,6 +1088,20 @@ contains
         end do
         ! Set flag to indicate a rescaling was performed
         l_rescaled=.true.
+
+        ! Rescale the dependent aerosol processes by the same mass ratio so that
+        ! aerosol transferred between reservoirs stays consistent with the
+        ! (now clipped) hydrometeor process rate that drives it.
+        if (present(aeroprocs) .and. present(iprocs_dependent)) then
+          do iproc=1, size(iprocs_dependent)
+            if (iprocs_dependent(iproc)%on) then
+              id=iprocs_dependent(iproc)%id
+              do iq=1, ntotala
+                aeroprocs(iq, id)%column_data(k)=aeroprocs(iq, id)%column_data(k)*ratio
+              end do
+            end if
+          end do
+        end if
       end if
 
       ! Now we need to rescale additional moments
@@ -1161,9 +1175,8 @@ contains
         ! !   end if
         ! ! end if
 
-        !Now rescale the increments to aerosol
-        ! How do we do this?????
-        !        print*, 'WARNING: Should be rescaling aerosol?, but not done!'
+        ! Dependent aerosol mass processes are rescaled above using the 1st-moment
+        ! ratio (aerosol number tendencies, if any, are not separately tracked here).
 
       else ! What if we haven't rescaled mass, but number is now not conserved?
         if (l_rescale_on_number) then
