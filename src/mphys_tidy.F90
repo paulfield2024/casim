@@ -1305,6 +1305,7 @@ contains
     IF (lhook) CALL dr_hook(ModuleName//':'//RoutineName,zhook_in,zhook_handle)
 
     do k=1,nz
+      ratio_field(:)=1.0
       do iq=1, ntotala
         delta_scalable=0.0
         do iproc=1, size(iprocs)
@@ -1316,14 +1317,23 @@ contains
         delta_scalable=delta_scalable*dt
         if (delta_scalable + aerofields(k, iq) < spacing(aerofields(k, iq))    &
              .and. abs(delta_scalable) > spacing(aerofields(k, iq))) then
-          ratio=(spacing(aerofields(k, iq))-aerofields(k, iq))/(delta_scalable)
+          ratio_field(iq)=max(0.0_wp, (spacing(aerofields(k, iq))-aerofields(k, iq))/delta_scalable)
+        end if
+      end do
 
-          do iproc=1 ,size(iprocs)
-            if (iprocs(iproc)%on) then
-              id=iprocs(iproc)%id
-              aerosol_procs(iq,id)%column_data(k)=aerosol_procs(iq,id)%column_data(k)*ratio
-            end if
+      ! Scale all species of a process together so source/sink pairs stay conservative
+      do iproc=1, size(iprocs)
+        if (iprocs(iproc)%on) then
+          id=iprocs(iproc)%id
+          ratio=1.0
+          do iq=1, ntotala
+            if (aerosol_procs(iq,id)%column_data(k) < 0.0) ratio=min(ratio, ratio_field(iq))
           end do
+          if (ratio < 1.0) then
+            do iq=1, ntotala
+              aerosol_procs(iq,id)%column_data(k)=aerosol_procs(iq,id)%column_data(k)*ratio
+            end do
+          end if
         end if
       end do
     end do
