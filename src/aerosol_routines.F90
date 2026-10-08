@@ -354,7 +354,7 @@ contains
             aeroact(k)%rcrit2=rcrit2
             aeroact(k)%mact2=mact2
             aeroact(k)%mact2_mean=aeroact(k)%mact2/(aeroact(k)%nact2 + epsilon(ntot))
-!            aeroact(k)%mact2_mean=min(aero_mact_mean_max, aeroact(k)%mact2_mean)
+            aeroact(k)%mact2_mean=min(aero_mact_mean_max, aeroact(k)%mact2_mean)
 
           end if
 
@@ -362,7 +362,7 @@ contains
           aeroact(k)%mact1=max(0.0_wp, aeroact(k)%mact-aeroact(k)%mact2)
           aeroact(k)%rcrit1=0.0
           aeroact(k)%mact1_mean=aeroact(k)%mact1/(aeroact(k)%nact1+epsilon(mar))
-!          aeroact(k)%mact1_mean=min(aero_mact_mean_max, aeroact(k)%mact1_mean)
+          aeroact(k)%mact1_mean=min(aero_mact_mean_max, aeroact(k)%mact1_mean)
 
           if (cloud_number > epsilon(1.0_wp)) then
             aeroact(k)%nratio1=max(0.0,min(1.0,aeroact(k)%nact1/cloud_number))
@@ -490,7 +490,7 @@ contains
               dustact(k)%rcrit2=0.0
               dustact(k)%mact2=mad *ratio_s
               dustact(k)%mact2_mean=dustact(k)%mact2/(dustact(k)%nact2+epsilon(nhtot))
-!              dustact(k)%mact2_mean=min(dust_mact_mean_max, dustact(k)%mact2_mean)
+              dustact(k)%mact2_mean=min(dust_mact_mean_max, dustact(k)%mact2_mean)
 
               dustact(k)%nratio2=max(0.0,min(1.0,dustact(k)%nact2/(snow_number+epsilon(nhtot)) ))
             end if
@@ -500,7 +500,7 @@ contains
               dustact(k)%rcrit3=0.0
               dustact(k)%mact3=mad *ratio_g
               dustact(k)%mact3_mean=dustact(k)%mact3/(dustact(k)%nact3+epsilon(nhtot))
-!              dustact(k)%mact3_mean=min(dust_mact_mean_max, dustact(k)%mact3_mean)
+              dustact(k)%mact3_mean=min(dust_mact_mean_max, dustact(k)%mact3_mean)
               dustact(k)%nratio3=max(0.0,min(1.0,dustact(k)%nact3/(graupel_number+epsilon(nhtot)) ))
             end if
             
@@ -509,7 +509,7 @@ contains
                dustact(k)%mact1=max(0.0_wp, dustact(k)%mact-dustact(k)%mact2-dustact(k)%mact3)
                dustact(k)%rcrit1=0.0
                dustact(k)%mact1_mean=dustact(k)%mact1/(dustact(k)%nact1+epsilon(mar))
-!               dustact(k)%mact1_mean=min(dust_mact_mean_max, dustact(k)%mact1_mean)
+               dustact(k)%mact1_mean=min(dust_mact_mean_max, dustact(k)%mact1_mean)
 
                dustact(k)%nratio1=max(0.0,min(1.0,dustact(k)%nact1/(ice_number+epsilon(nhtot)) ))
             end if
@@ -605,7 +605,7 @@ contains
                 aeroice(k)%rcrit2=0.0
                 aeroice(k)%mact2=maai*ratio_s
                 aeroice(k)%mact2_mean=aeroice(k)%mact2/(aeroice(k)%nact2+epsilon(nhtot))
-!                aeroice(k)%mact2_mean=min(aero_mact_mean_max, aeroice(k)%mact2_mean)
+                aeroice(k)%mact2_mean=min(aero_mact_mean_max, aeroice(k)%mact2_mean)
                 aeroice(k)%nratio2=max(0.0, min(1.0,aeroice(k)%nact2/(snow_number+epsilon(nhtot)) ))
               end if
 
