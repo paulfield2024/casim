@@ -212,8 +212,8 @@ contains
 
     character(len=*), parameter :: RoutineName='EXAMINE_AEROSOL'
 
-    real, parameter :: aero_mact_mean_max=1e30!3e-13 !kg -make bigger for coarse soluble aerosol
-    real, parameter :: dust_mact_mean_max=1e30!3e-13 !kg 3xsigma+mean(1micron) density 1777
+    real, parameter :: aero_mact_mean_max=1e-13!1e30!3e-13 !kg -make bigger for coarse soluble aerosol
+    real, parameter :: dust_mact_mean_max=1e-13!1e30!3e-13 !kg 3xsigma+mean(1micron) density 1777
     ! When l_bypass_whichmode is True (or no larger modes exist to move aerosol to)
     ! aerosol mean sizes in hydrometeors can become so large that they lead to instability
     ! during hydrometeor sedimentation. Limiting the maximum mean mass stops these edge
