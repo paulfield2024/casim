@@ -474,9 +474,18 @@ contains
           dmass=dustliq(k)%mact2/dt
           dnumber=dustliq(k)%nact2/dt
           if (dmass>0.0) then
-            aeroprocs(i_am9,i_aproc%id)%column_data(k)=-dmass
-            aeroprocs(i_am6,i_aproc%id)%column_data(k)=dmass
-            aeroprocs(i_an6,i_aproc%id)%column_data(k)=dnumber
+            if (ql_reset .or. nl_reset) then
+              aeroprocs(i_am9,i_aproc%id)%column_data(k)= &
+                     aeroprocs(i_am9,i_aproc%id)%column_data(k)-dmass
+              aeroprocs(i_am6,i_aproc%id)%column_data(k)= &
+                     aeroprocs(i_am6,i_aproc%id)%column_data(k)+dmass
+              aeroprocs(i_an6,i_aproc%id)%column_data(k)= &
+                     aeroprocs(i_an6,i_aproc%id)%column_data(k)+dnumber
+            else
+              aeroprocs(i_am9,i_aproc%id)%column_data(k)=-dmass
+              aeroprocs(i_am6,i_aproc%id)%column_data(k)=dmass
+              aeroprocs(i_an6,i_aproc%id)%column_data(k)=dnumber
+            end if
           end if
         end if
       end if
