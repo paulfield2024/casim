@@ -3,7 +3,7 @@ module mphys_tidy
   use process_routines, only: process_rate,  process_name
   use aerosol_routines, only: aerosol_active
   use thresholds, only: thresh_tidy, thresh_atidy,&
-      aeromass_small, aeronumber_small
+      aeromass_small, aeronumber_small,aero_mact_mean_max, dust_mact_mean_max
   use passive_fields, only: exner, pressure
   use mphys_switches, only:                       &
        i_qv, i_ql, i_nl, i_qr, i_nr, i_m3r, i_th, &
@@ -628,6 +628,19 @@ contains
           dmass=aerofields(k, i_am9)/dt
           aeroprocs(i_am9,i_aproc%id)%column_data(k)=aeroprocs(i_am9,i_aproc%id)%column_data(k)-dmass
           aeroprocs(i_am6,i_aproc%id)%column_data(k)=aeroprocs(i_am6,i_aproc%id)%column_data(k)+dmass
+          
+       ! Pragmatic correction for extreme size sorting of dust in rain that evaporates close to ground
+        else 
+          if ( aerofields(k, i_am9) .gt. qfields(k, i_nr)*dust_mact_mean_max ) then
+            dmass=( aerofields(k, i_am9)-qfields(k, i_nr)*dust_mact_mean_max )/dt
+            aeroprocs(i_am9,i_aproc%id)%column_data(k)= &
+                     aeroprocs(i_am9,i_aproc%id)%column_data(k)-dmass
+            aeroprocs(i_am6,i_aproc%id)%column_data(k)= &
+                     aeroprocs(i_am6,i_aproc%id)%column_data(k)+dmass
+            aeroprocs(i_an6,i_aproc%id)%column_data(k)= &
+                     aeroprocs(i_an6,i_aproc%id)%column_data(k)+dnumber
+          end if
+      ! End of pragmatism
         end if
 
         !only do this is passive numbers are used!

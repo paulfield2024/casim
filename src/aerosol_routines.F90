@@ -9,7 +9,8 @@ module aerosol_routines
        i_qr, i_qi, i_qs, i_qg, l_active_inarg2000, aero_index, l_warm,  &
        l_process, l_passivenumbers,              &
        l_passivenumbers_ice, l_separate_rain, l_ukca_casim, l_bypass_which_mode
-  use thresholds, only: nr_tidy, nl_tidy, ni_tidy, ccn_tidy, qr_tidy, aeromass_small, aeronumber_small
+  use thresholds, only: nr_tidy, nl_tidy, ni_tidy, ccn_tidy, qr_tidy, aeromass_small, aeronumber_small, &
+                        aero_mact_mean_max, dust_mact_mean_max
   use mphys_parameters, only: sigma_arc, nz
   use lognormal_funcs, only: MNtoRm ! DPG - added this for MNtoRm since was
                                     ! causing circular conflicts as wanted
@@ -212,8 +213,8 @@ contains
 
     character(len=*), parameter :: RoutineName='EXAMINE_AEROSOL'
 
-    real, parameter :: aero_mact_mean_max=1e-13!1e30!3e-13 !kg -make bigger for coarse soluble aerosol
-    real, parameter :: dust_mact_mean_max=1e-13!1e30!3e-13 !kg 3xsigma+mean(1micron) density 1777
+!    real, parameter :: aero_mact_mean_max=1e-13!1e30!3e-13 !kg -make bigger for coarse soluble aerosol
+!    real, parameter :: dust_mact_mean_max=1e-13!1e30!3e-13 !kg 3xsigma+mean(1micron) density 1777
     ! When l_bypass_whichmode is True (or no larger modes exist to move aerosol to)
     ! aerosol mean sizes in hydrometeors can become so large that they lead to instability
     ! during hydrometeor sedimentation. Limiting the maximum mean mass stops these edge

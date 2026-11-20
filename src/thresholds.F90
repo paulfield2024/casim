@@ -78,6 +78,10 @@ module thresholds
   real(wp) :: aeromass_small = 1.0e-25      ! small aerosol mass (kg/kg)
   real(wp) :: aeronumber_small = 1.0e-6     ! small aerosol number (/kg)
 
+  real, parameter :: aero_mact_mean_max=1e-13!1e30!3e-13 !kg -make bigger for coarse soluble aerosol
+  real, parameter :: dust_mact_mean_max=1e-13!1e30!3e-13 !kg 3xsigma+mean(1micron) density 1777
+
+
   !-----------------------------------------------------
   ! arrays containing all the threshold information
   ! for relevant microphysics options.
