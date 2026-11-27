@@ -209,7 +209,7 @@ contains
                 ka, min_homog_ni, dniraw, d0_homog
     logical :: l_use_critical_w = .True.  !ni controlled by w and environmental conditions
     logical :: l_use_ni_limit = .False.   !ni limited to max per timestep
-    
+    real(wp) :: min_w = 0.1
     
     logical :: l_condition
 
@@ -271,7 +271,7 @@ contains
                    Bis=bm*B0*(Ew/Ei-1.0)
                    aw=g/(Rd*Tk)*(Lv*Rd/(cp*Rv*Tk)-1.0)
                    
-                   dnumberi=max(w(k,ixy_inner),0.0)*(aw/Bis)/d0_homog  / dt  !convert to a rate
+                   dnumberi=max(w(k,ixy_inner),min_w)*(aw/Bis)/d0_homog  / dt  !convert to a rate
                    dniraw=dnumberi
                    !make max just below limit
                    dnumberi=min(dnumber*0.90, max(min_homog_ni, dnumberi))
